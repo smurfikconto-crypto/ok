@@ -1,5 +1,6 @@
 ﻿// Singleton + Command/Memento hooki
 using System;
+using System.Linq;
 
 namespace Projekt_ZTP
 {
@@ -10,11 +11,8 @@ namespace Projekt_ZTP
 
         public static GameManager Instance => _instance.Value;
 
-        private GameManager()
-        {
-            _achievementManager = new AchievementManager();
-            _gameStats = new GameStats();
-        }
+        private readonly AchievementManager _achievementManager;
+        private readonly GameStats _gameStats;
 
         private Player[] _players = Array.Empty<Player>();
         private GameState _currentState = new GameState();
@@ -22,8 +20,13 @@ namespace Projekt_ZTP
 
         public Player? CurrentPlayer => _currentState.Turn;
 
-        private readonly AchievementManager _achievementManager;
-        private readonly GameStats _gameStats;
+        private GameManager()
+        {
+            _achievementManager = new AchievementManager();
+            _gameStats = new GameStats();
+
+            AchievementPersistence.Load(_achievementManager, _gameStats);
+        }
 
         public void StartGame()
         {
@@ -44,23 +47,24 @@ namespace Projekt_ZTP
                 AiBoard = board2
             };
         }
-
+        
         public void EndGame(bool playerWon, int hits, int shots)
         {
-            // aktualizacja statystyk
+            // Aktualizacja statystyk
             _gameStats.RegisterGame(playerWon, hits, shots);
-
-            // sprawdzenie osiągnięć
+            // Sprawdzenie osiągnięć
             _achievementManager.CheckAchievements(_gameStats);
+            // Zapisz do pliiku (JSON / Memento)
+            AchievementPersistence.Save(_achievementManager, _gameStats);
 
             CurrentGame = null;
         }
 
         public void SaveGameState()
         {
-            // TODO: Memento – serializacja GameState
+            // TODO: serializacja GameState (osobny memento)
         }
-
+        
         public Achievement[] GetAchievements()
         {
             return _achievementManager.Achievements.Values.ToArray();
