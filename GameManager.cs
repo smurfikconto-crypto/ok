@@ -1,6 +1,5 @@
 ﻿// Singleton + Command/Memento hooki
 using System;
-using System.Numerics;
 
 namespace Projekt_ZTP
 {
@@ -11,13 +10,20 @@ namespace Projekt_ZTP
 
         public static GameManager Instance => _instance.Value;
 
-        private GameManager() { }
+        private GameManager()
+        {
+            _achievementManager = new AchievementManager();
+            _gameStats = new GameStats();
+        }
 
         private Player[] _players = Array.Empty<Player>();
         private GameState _currentState = new GameState();
         public Game? CurrentGame { get; private set; }
 
         public Player? CurrentPlayer => _currentState.Turn;
+
+        private readonly AchievementManager _achievementManager;
+        private readonly GameStats _gameStats;
 
         public void StartGame()
         {
@@ -39,14 +45,25 @@ namespace Projekt_ZTP
             };
         }
 
-        public void EndGame()
+        public void EndGame(bool playerWon, int hits, int shots)
         {
+            // aktualizacja statystyk
+            _gameStats.RegisterGame(playerWon, hits, shots);
+
+            // sprawdzenie osiągnięć
+            _achievementManager.CheckAchievements(_gameStats);
+
             CurrentGame = null;
         }
 
         public void SaveGameState()
         {
-            // Dodać Memento – serializacja GameState
+            // TODO: Memento – serializacja GameState
+        }
+
+        public Achievement[] GetAchievements()
+        {
+            return _achievementManager.Achievements.Values.ToArray();
         }
     }
 }
